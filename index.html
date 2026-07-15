@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>三周年快乐 · 写给最爱的你</title>
+
+<!-- Tailwind（仅用于排版便利，关键视觉不依赖它） -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- 撒花特效（渐进增强，加载失败不影响页面） -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<!-- 字体：加载失败时回退到系统衬线，页面依然可读 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&family=Noto+Serif+SC:wght@300;400;600;700&family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=ZCOOL+XiaoWei&family=Allura&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&family=Noto+Serif+SC:wght@300;400;600;700&family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=ZCOOL+XiaoWei&family=Allura&display=swap" rel="stylesheet"></noscript>
+
+<style>
+/* ============================================================
+   主题：干枯玫瑰（提亮版） · 三周年
+   ============================================================ */
+:root {
+  --bg-paper:    #FDF6F2;   /* 暖米白 */
+  --primary:     #C16B75;   /* 主玫瑰（比 #7 提亮） */
+  --primary-deep:#9E4A55;   /* 深玫瑰（正文强调） */
+  --accent:      #D98A94;
+  --rose-light:  #F4DDE1;
+  --gold:        #B08D44;
+  --gold-light:  #C9A86A;
+  --ink:         #3A2D2E;   /* 暖墨色正文 */
+  --ink-soft:    #6E5A5C;
+  --glass-border:rgba(255,255,255,.6);
+
+  --dur-fast:.2s; --dur-normal:.35s; --dur-slow:1.2s;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior:smooth; }
+
+body {
+  background-color:var(--bg-paper);
+  color:var(--ink);
+  font-family:'Noto Serif SC','Songti SC',serif;
+  line-height:1.85;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  user-select:none;
+}
+
+/* —— 字体工具类 —— */
+.num-font     { font-family:'Quicksand',sans-serif; font-weight:700; letter-spacing:-.02em; }
+.eng-label    { font-family:'Cinzel',serif; letter-spacing:.18em; text-transform:uppercase; }
+.eng-title    { font-family:'Playfair Display',serif; }
+.sign-font    { font-family:'Allura','Playfair Display',cursive; }
+.zh-deco      { font-family:'ZCOOL XiaoWei','Noto Serif SC',serif; }
+.text-primary { color:var(--primary); }
+.text-deep    { color:var(--primary-deep); }
+.text-gold    { color:var(--gold); }
+.text-soft    { color:var(--ink-soft); }
+
+/* ============================================================
+   背景装饰：胶片噪点 + 极光光斑 + 粒子画布
+   ============================================================ */
+.film-grain {
+  position:fixed; inset:0; pointer-events:none; z-index:900;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+.aurora-blob {
+  position:fixed; border-radius:50%; z-index:0; pointer-events:none;
+  background:radial-gradient(circle, var(--rose-light) 0%, transparent 70%);
+  filter:blur(60px); opacity:.55;
+  animation:floatBlob 14s infinite alternate;
+}
+@keyframes floatBlob { 0%{transform:translate(0,0) scale(1);} 100%{transform:translate(40px,-30px) scale(1.15);} }
+
+#particles { position:fixed; inset:0; pointer-events:none; z-index:1; }
+
+/* 顶部滚动进度条 */
+.scroll-progress {
+  position:fixed; top:0; left:0; height:3px; width:100%;
+  background:linear-gradient(90deg,var(--primary),var(--gold));
+  z-index:1001; transform-origin:left; transform:scaleX(0);
+  transition:transform .1s linear;
+}
+
+/* ============================================================
+   入场遮罩（心跳爱心 → 开启）
+   ============================================================ */
+.entrance-overlay {
+  position:fixed; inset:0; z-index:9999;
+  background:linear-gradient(160deg,#FDF6F2 0%,#FBEDEF 55%,#F6E2E4 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:2rem; text-align:center;
+  transition:opacity .9s ease, visibility .9s ease;
+}
+.entrance-overlay.hidden { opacity:0; visibility:hidden; pointer-events:none; }
+
+.entrance-heart {
+  width:150px; height:auto; margin-bottom:1.8rem;
+  filter:drop-shadow(0 0 22px rgba(193,107,117,.45));
+  animation:heartPulse 2.6s ease-in-out infinite;
+  cursor:pointer;
+}
+@keyframes heartPulse {
+  0%,100%{ transform:scale(1); filter:drop-shadow(0 0 22px rgba(193,107,117,.4)); }
+  50%    { transform:scale(1.06); filter:drop-shadow(0 0 34px rgba(193,107,117,.65)); }
+}
+.entrance-title {
+  font-size:1.9rem; font-weight:600; color:var(--primary-deep);
+  letter-spacing:.06em; margin-bottom:.4rem;
+}
+.entrance-sub { font-size:1.05rem; color:var(--ink-soft); letter-spacing:.12em; margin-bottom:3rem; }
+.entrance-btn {
+  display:inline-flex; align-items:center; gap:.5rem;
+  padding:14px 46px; font-size:1.05rem; letter-spacing:.12em;
+  font-family:'Noto Serif SC',serif; color:#FFF6EC; cursor:pointer;
+  background:linear-gradient(180deg,#C16B75 0%,#9E4A55 100%);
+  border:2px solid var(--gold-light); border-radius:999px;
+  box-shadow:0 6px 20px rgba(158,74,85,.4), inset 0 1px 2px rgba(255,255,255,.25);
+  transition:transform .3s ease, box-shadow .3s ease, background .3s ease;
+}
+.entrance-btn:hover { transform:translateY(-2px); box-shadow:0 10px 26px rgba(158,74,85,.5); }
+.entrance-btn:active{ transform:scale(.98); }
+
+/* ============================================================
+   通用版心 / 区块
+   ============================================================ */
+.wrap { max-width:760px; margin:0 auto; padding:0 1.25rem; }
+section { position:relative; z-index:2; }
+.section-pad { padding:5.5rem 1.25rem; }
+
+/* 区块小标题 */
+.eyebrow {
+  font-size:.72rem; color:var(--primary); opacity:.8;
+  letter-spacing:.28em; text-align:center; margin-bottom:.9rem;
+}
+.section-title {
+  font-size:1.7rem; font-weight:600; color:var(--primary-deep);
+  text-align:center; letter-spacing:.06em; margin-bottom:.6rem;
+}
+.section-rule { width:48px; height:1px; background:var(--primary); opacity:.4; margin:1.2rem auto 2.4rem; }
+
+/* 滚动渐入 */
+.reveal { opacity:0; transform:translateY(38px); transition:opacity .9s ease, transform .9s ease; }
+.reveal.visible { opacity:1; transform:translateY(0); }
+
+/* 水晶玻璃卡 */
+.glass-card {
+  background:rgba(255,255,255,.55);
+  backdrop-filter:blur(18px) saturate(160%);
+  -webkit-backdrop-filter:blur(18px) saturate(160%);
+  border:1px solid var(--glass-border);
+  border-radius:22px;
+  box-shadow:0 18px 50px rgba(193,107,117,.16), inset 0 0 24px rgba(255,255,255,.5);
+  padding:2.6rem 2rem; position:relative; overflow:hidden;
+}
+
+/* ============================================================
+   首屏 · 天数计数
+   ============================================================ */
+.hero { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6rem 1.25rem 4rem; }
+.date-stamp {
+  border:2px solid var(--primary); border-radius:5px; padding:.4rem 1rem;
+  transform:rotate(3deg); opacity:.7; margin-bottom:2rem; font-size:.78rem;
+}
+.days-big {
+  font-size:7rem; line-height:1; color:var(--primary);
+  text-shadow:0 4px 20px rgba(193,107,117,.18);
+  animation:beat 1.1s ease-in-out infinite;
+}
+@keyframes beat { 0%,100%{transform:scale(1);} 20%{transform:scale(1.03);} 40%{transform:scale(1);} }
+.days-label { font-size:1.1rem; color:var(--gold); font-style:italic; margin-top:.3rem; }
+.hero-quote { max-width:30rem; margin:2.2rem auto 0; color:var(--ink-soft); font-size:1.02rem; }
+
+/* 实时计时条 */
+.timer-row { display:flex; gap:1.4rem; justify-content:center; flex-wrap:wrap; margin-top:2.6rem; }
+.timer-cell { text-align:center; min-width:64px; }
+.timer-num { font-size:1.7rem; color:var(--primary-deep); }
+.timer-cap { font-size:.62rem; color:var(--ink-soft); letter-spacing:.18em; text-transform:uppercase; }
+.heartbeat-line { margin-top:2.2rem; color:var(--primary-deep); font-size:.95rem; opacity:.85; }
+.heartbeat-line b { color:var(--primary); }
+
+.scroll-cue { position:absolute; bottom:26px; left:50%; transform:translateX(-50%); color:var(--primary); opacity:.5; font-size:1.4rem; animation:bob 1.8s ease-in-out infinite; }
+@keyframes bob { 0%,100%{transform:translate(-50%,0);} 50%{transform:translate(-50%,8px);} }
+
+/* ============================================================
+   打字机告白
+   ============================================================ */
+.typewriter { font-size:1.18rem; line-height:2.1; color:var(--ink); text-align:center; min-height:9rem; }
+.typewriter .cursor { display:inline-block; width:2px; height:1.2em; background:var(--primary); vertical-align:text-bottom; margin-left:2px; animation:blink .7s steps(1) infinite; }
+@keyframes blink { 50%{opacity:0;} }
+.tw-dear { color:var(--primary-deep); }
+
+/* ============================================================
+   撕页金句 · 日历
+   ============================================================ */
+.calendar-container { max-width:320px; margin:0 auto; perspective:1000px; }
+.calendar-cover {
+  position:relative; cursor:pointer; text-align:center;
+  background:linear-gradient(145deg,#FFFDF8 0%,#FFF6E9 50%,#FAEBD7 100%);
+  border:1px solid rgba(176,141,68,.3); border-radius:16px;
+  padding:2.4rem 1.6rem 2rem;
+  box-shadow:0 12px 40px rgba(0,0,0,.08);
+  transform-origin:top center; transition:transform .35s ease, box-shadow .35s ease;
+}
+.calendar-cover:hover { transform:translateY(-4px) rotateX(2deg); box-shadow:0 20px 50px rgba(0,0,0,.12); }
+.calendar-cover.tearing { animation:tearAway .6s ease-out forwards; }
+@keyframes tearAway {
+  0%  { transform:translateY(0) rotateX(0) rotateZ(0); opacity:1; }
+  30% { transform:translateY(-18px) translateX(-4px) rotateX(-18deg) rotateZ(-2deg); }
+  100%{ transform:translateY(-130px) translateX(10px) rotateX(-55deg) rotateZ(8deg); opacity:0; }
+}
+.wax-seal {
+  width:78px; height:78px; margin:0 auto 1.3rem; border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,#C9A86A 0%,#A67C52 32%,#8B6914 62%,#6B5210 100%);
+  box-shadow:0 4px 15px rgba(139,105,20,.4), inset 0 2px 4px rgba(255,255,255,.3);
+  display:flex; align-items:center; justify-content:center;
+  animation:sealPulse 3s ease-in-out infinite;
+}
+.wax-seal::before { content:''; position:absolute; inset:3px; border-radius:50%; border:2px solid rgba(255,255,255,.15); }
+.wax-heart { font-size:1.6rem; filter:drop-shadow(0 1px 2px rgba(0,0,0,.3)); }
+@keyframes sealPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.04);} }
+.calendar-date { font-size:1.25rem; font-weight:600; color:#5D4037; letter-spacing:.08em; margin-bottom:.6rem; }
+.calendar-label-main { font-weight:600; letter-spacing:.14em; color:#8D6E63; }
+.calendar-label-sub { font-family:'Cinzel',serif; font-size:.66rem; letter-spacing:.2em; text-transform:uppercase; color:#8D6E63; opacity:.75; margin-top:.2rem; }
+
+.tear-scrap {
+  position:fixed; height:26px; border-radius:0 0 14px 14px;
+  background:linear-gradient(145deg,#FFFDF8 0%,#FFF6E9 50%,#FAEBD7 100%);
+  border:1px solid rgba(176,141,68,.25); border-top:none;
+  box-shadow:0 18px 35px rgba(0,0,0,.14); pointer-events:none; z-index:10000;
+  clip-path:polygon(0% 35%,5% 18%,10% 36%,15% 12%,21% 34%,27% 10%,33% 32%,39% 14%,46% 34%,53% 12%,60% 33%,67% 10%,74% 32%,81% 14%,88% 34%,95% 12%,100% 26%,100% 100%,0% 100%);
+  transform-origin:20% 0%; animation:scrapFall .95s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes scrapFall { 0%{opacity:0;transform:translateY(0) rotate(0);} 12%{opacity:1;} 55%{transform:translateY(140px) translateX(8px) rotate(10deg);opacity:.9;} 100%{transform:translateY(250px) translateX(24px) rotate(18deg);opacity:0;} }
+
+/* 撕开后的明信片（背景 = 你给的 8 张照片，按金句轮换） */
+.quote-postcard {
+  position:relative; border-radius:16px; overflow:hidden;
+  aspect-ratio:3/4; max-height:480px;
+  background-color:#f0dfe2;                 /* 图片未加载/失败时的兜底底色 */
+  background-size:cover; background-position:center; background-repeat:no-repeat;
+  box-shadow:0 16px 50px rgba(0,0,0,.16), 0 5px 20px rgba(0,0,0,.08);
+}
+/* 照片蒙版：约 40% 白雾 → 照片约 60% 可见，不挡字 */
+.quote-postcard::before {
+  content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:linear-gradient(180deg, rgba(255,255,255,.46), rgba(255,255,255,.40) 45%, rgba(255,255,255,.44));
+}
+.quote-postcard.revealing { opacity:0; transform:translateY(20px); animation:revealCard .5s ease-out .35s forwards; }
+@keyframes revealCard { to{opacity:1; transform:translateY(0);} }
+.quote-postcard-border { position:absolute; inset:8px; border:1px solid rgba(255,255,255,.7); border-radius:12px; z-index:5; pointer-events:none; }
+.quote-postcard-content {
+  position:relative; z-index:10; height:100%;
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  padding:2.2rem 1.6rem;
+}
+.quote-text { font-size:1.12rem; line-height:2; color:#2c1e20; text-align:center; text-shadow:0 1px 4px rgba(255,255,255,.95), 0 0 14px rgba(255,255,255,.6); max-width:92%; margin-bottom:1rem; }
+.quote-author { font-size:.85rem; color:#3e2c2e; text-shadow:0 1px 3px rgba(255,255,255,.85); }
+.quote-footer { position:absolute; bottom:1.4rem; left:1.4rem; right:1.4rem; display:flex; justify-content:space-between; align-items:flex-end; z-index:15; }
+.quote-date-watermark { font-size:.7rem; color:#4a3638; letter-spacing:.05em; text-shadow:0 1px 2px rgba(255,255,255,.7); }
+.quote-love { font-family:'Allura',cursive; font-size:1.4rem; color:#3e2c2e; text-shadow:0 1px 2px rgba(255,255,255,.7); }
+.quote-name-watermark { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:6; pointer-events:none; font-family:'Quicksand',sans-serif; font-weight:700; font-size:1.9rem; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.92); text-shadow:0 2px 12px rgba(0,0,0,.18); transform:rotate(-12deg); }
+
+.quote-actions { text-align:center; margin-top:1.4rem; }
+.quote-refresh {
+  background:rgba(255,255,255,.7); border:1px solid var(--rose-light); color:var(--primary-deep);
+  padding:.5rem 1.4rem; border-radius:999px; font-size:.85rem; cursor:pointer; letter-spacing:.08em;
+  font-family:inherit; transition:all .3s ease;
+}
+.quote-refresh:hover { background:#fff; transform:translateY(-2px); box-shadow:0 6px 16px rgba(193,107,117,.18); }
+
+/* ============================================================
+   时间线 · 我们的三年
+   ============================================================ */
+.timeline { position:relative; margin-top:1rem; }
+.timeline::before { content:''; position:absolute; left:18px; top:6px; bottom:6px; width:2px; background:linear-gradient(to bottom, transparent, var(--primary), var(--gold), transparent); opacity:.4; }
+.tl-item { position:relative; padding:0 0 2.2rem 3.2rem; }
+.tl-item:last-child { padding-bottom:0; }
+.tl-dot { position:absolute; left:11px; top:4px; width:16px; height:16px; border-radius:50%; background:var(--primary); box-shadow:0 0 0 4px rgba(193,107,117,.18); }
+.tl-card {
+  background:#fff; border:1px solid #f1e8e6; border-radius:14px; padding:1.6rem 1.5rem;
+  box-shadow:0 10px 28px rgba(0,0,0,.05); position:relative; transition:transform .35s ease;
+}
+.tl-card:hover { transform:translateY(-3px); }
+.tl-card::before { content:''; position:absolute; left:0; top:18px; bottom:18px; width:4px; background:var(--primary); border-radius:0 4px 4px 0; }
+.tl-year { font-family:'Playfair Display',serif; font-size:1.05rem; color:var(--gold); letter-spacing:.08em; }
+.tl-head { font-size:1.12rem; font-weight:600; color:var(--primary-deep); margin:.2rem 0 .7rem; }
+.tl-body { font-size:.96rem; color:var(--ink-soft); line-height:1.95; }
+.tl-watermark { position:absolute; top:-.5rem; right:.4rem; font-family:'Playfair Display',serif; font-weight:700; font-size:3.2rem; color:var(--primary); opacity:.08; line-height:1; pointer-events:none; }
+
+/* ============================================================
+   写给你的情书 · 信纸
+   ============================================================ */
+.letter-paper {
+  position:relative; border-radius:14px; padding:2.6rem 2.3rem 2.2rem;
+  background:linear-gradient(160deg,#FFFDF7 0%,#FFF7E9 60%,#FBEBD3 100%);
+  border:1px solid rgba(176,141,68,.3);
+  box-shadow:0 18px 44px rgba(176,141,68,.16), inset 0 0 30px rgba(255,255,255,.4);
+  color:#4a3a36; font-size:1.02rem; line-height:2.1;
+}
+/* 信纸右侧淡淡的竖向「装订线」质感 */
+.letter-paper::before{
+  content:''; position:absolute; left:1.1rem; top:1.4rem; bottom:1.4rem; width:1px;
+  background:repeating-linear-gradient(to bottom, rgba(193,107,117,.25) 0, rgba(193,107,117,.25) 3px, transparent 3px, transparent 9px);
+}
+.letter-body p { margin-bottom:1.15rem; text-indent:2em; }
+.letter-body p:last-child { margin-bottom:0; }
+.letter-sign { text-align:right; margin-top:1.8rem; }
+.letter-sign-name { font-family:'ZCOOL XiaoWei','Noto Serif SC',serif; font-size:1.25rem; color:var(--primary-deep); letter-spacing:.05em; }
+@media(max-width:480px){
+  .letter-paper{ padding:1.9rem 1.4rem 1.6rem; font-size:.96rem; line-height:2; }
+  .letter-paper::before{ left:.6rem; }
+}
+
+/* ============================================================
+   照片画廊
+   ============================================================ */
+.gallery-grid { display:grid; grid-template-columns:1fr; gap:1.6rem; max-width:680px; margin:0 auto; }
+@media(min-width:640px){ .gallery-grid{ grid-template-columns:repeat(2,1fr); } }
+.gallery-grid .featured { grid-column:1 / -1; }
+
+.photo-frame {
+  position:relative; border-radius:16px; overflow:hidden;
+  border:3px solid #fff; box-shadow:0 12px 34px rgba(193,107,117,.22);
+  background:var(--rose-light);
+}
+.photo-frame img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .8s ease; }
+.photo-frame:hover img { transform:scale(1.04); }
+.photo-caption { position:absolute; left:0; right:0; bottom:0; padding:.7rem 1rem; color:#fff; font-size:.8rem; letter-spacing:.05em; background:linear-gradient(transparent, rgba(0,0,0,.45)); }
+
+/* 环绕爱心（主图） */
+.orbit-area { position:relative; }
+.orbit-heart { position:absolute; top:50%; left:50%; width:30px; height:30px; margin-left:-15px; margin-top:-15px; font-size:26px; pointer-events:none; z-index:5; animation:orbit 12s linear infinite; }
+.orbit-heart:nth-child(2){animation-delay:-2s;} .orbit-heart:nth-child(3){animation-delay:-4s;} .orbit-heart:nth-child(4){animation-delay:-6s;} .orbit-heart:nth-child(5){animation-delay:-8s;} .orbit-heart:nth-child(6){animation-delay:-10s;}
+@keyframes orbit { 0%{transform:rotate(0) translateX(46%) rotate(0);} 100%{transform:rotate(360deg) translateX(46%) rotate(-360deg);} }
+
+/* ============================================================
+   承诺 · 逃跑按钮
+   ============================================================ */
+.promise-q { font-size:1.45rem; font-weight:600; color:var(--primary-deep); text-align:center; margin-bottom:2rem; letter-spacing:.04em; }
+.btns { display:flex; gap:1.6rem; justify-content:center; flex-wrap:wrap; position:relative; min-height:60px; }
+.btn { padding:13px 40px; font-size:1.05rem; border-radius:50px; border:none; cursor:pointer; letter-spacing:.06em; font-family:inherit; }
+.btn-yes { background:linear-gradient(135deg,var(--primary),var(--primary-deep)); color:#fff; box-shadow:0 8px 24px rgba(193,107,117,.4); transition:transform .3s ease, box-shadow .3s ease; }
+.btn-yes:hover { transform:translateY(-3px); box-shadow:0 14px 32px rgba(193,107,117,.5); }
+.btn-no { background:rgba(255,255,255,.7); color:#9a8a8c; border:2px solid #e6d3d5; }
+.btn-no.fleeing { transition:left .25s ease-out, top .25s ease-out, color .3s ease, border-color .3s ease, font-size .3s ease, padding .3s ease; }
+
+/* 告白成功弹窗 */
+.modal { position:fixed; inset:0; background:rgba(40,30,32,.6); backdrop-filter:blur(8px); display:none; align-items:center; justify-content:center; z-index:2000; padding:1.2rem; }
+.modal.show { display:flex; }
+.modal-card {
+  position:relative; background:#fff; border-radius:22px; max-width:420px; width:100%;
+  padding:2.2rem 1.8rem; text-align:center; max-height:90vh; overflow-y:auto;
+  box-shadow:0 30px 80px rgba(0,0,0,.3); animation:popIn .6s cubic-bezier(.18,.89,.32,1.28);
+}
+.modal-card::-webkit-scrollbar{ display:none; }
+@keyframes popIn { from{transform:scale(.3); opacity:0;} to{transform:scale(1); opacity:1;} }
+.modal-emoji { font-size:3.2rem; animation:bounce .9s ease-in-out infinite alternate; }
+@keyframes bounce { from{transform:translateY(0);} to{transform:translateY(-14px);} }
+.modal-title { font-size:1.6rem; color:var(--primary-deep); margin:.6rem 0 .8rem; letter-spacing:.06em; }
+.modal-body { font-size:.98rem; color:var(--ink-soft); line-height:1.95; margin-bottom:1.2rem; }
+.modal-names { font-size:1rem; color:var(--primary); letter-spacing:.1em; margin-bottom:1.1rem; }
+.modal-photo { width:200px; max-width:80%; margin:0 auto 1rem; border-radius:14px; overflow:hidden; border:3px solid var(--rose-light); box-shadow:0 8px 24px rgba(193,107,117,.25); animation:phbeat 1.2s ease-in-out infinite; }
+@keyframes phbeat { 0%,100%{transform:scale(1);} 14%{transform:scale(1.04);} 28%{transform:scale(1);} 42%{transform:scale(1.04);} 56%{transform:scale(1);} }
+.modal-photo img { width:100%; display:block; }
+.modal-close { margin-top:.4rem; background:transparent; border:none; color:var(--ink-soft); font-size:.85rem; cursor:pointer; letter-spacing:.1em; font-family:inherit; }
+
+/* 点击冒爱心 */
+.click-heart { position:fixed; pointer-events:none; z-index:9998; font-size:22px; animation:clickFloat 1.2s ease-out forwards; }
+@keyframes clickFloat { 0%{opacity:1; transform:translateY(0) scale(1);} 50%{opacity:.8; transform:translateY(-40px) scale(1.3);} 100%{opacity:0; transform:translateY(-90px) scale(.5);} }
+
+/* ============================================================
+   音乐开关 + 提示
+   ============================================================ */
+.music-toggle {
+  position:fixed; bottom:22px; right:22px; z-index:1000;
+  width:50px; height:50px; border-radius:50%; background:#fff;
+  border:1px solid var(--primary); box-shadow:0 4px 15px rgba(0,0,0,.1);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  transition:all .3s ease; font-size:1.2rem;
+}
+.music-toggle:hover { transform:scale(1.1); }
+.music-toggle.playing { background:var(--primary); border-color:var(--primary); color:#fff; }
+.music-toast {
+  position:fixed; bottom:84px; right:22px; z-index:1000;
+  background:rgba(255,255,255,.92); backdrop-filter:blur(10px);
+  padding:9px 16px; border-radius:18px; border:1px solid var(--rose-light);
+  box-shadow:0 4px 15px rgba(0,0,0,.06); font-size:.78rem; color:var(--ink-soft);
+  display:flex; align-items:center; gap:9px; transform:translateY(16px); opacity:0; transition:all .5s cubic-bezier(.4,0,.2,1); pointer-events:none; max-width:230px;
+}
+.music-toast.show { transform:translateY(0); opacity:1; }
+.music-toast-dot { width:8px; height:8px; border-radius:50%; background:var(--primary); animation:beat 1s infinite; }
+
+/* ============================================================
+   结尾
+   ============================================================ */
+.finale { text-align:center; padding:6rem 1.25rem 7rem; }
+.finale-title { font-size:2.4rem; color:var(--primary-deep); letter-spacing:.08em; margin-bottom:1.4rem; }
+.finale-body { max-width:34rem; margin:0 auto; color:var(--ink-soft); font-size:1.02rem; line-height:2; }
+.finale-names { margin-top:1.8rem; font-size:1.2rem; color:var(--primary); letter-spacing:.12em; }
+.finale-sign { font-family:'Allura',cursive; font-size:2.6rem; color:var(--primary-deep); margin:.6rem 0; }
+.finale-date { font-size:.8rem; color:#b9a7a9; letter-spacing:.12em; }
+.footer-mini { text-align:center; padding:1.4rem; font-size:.78rem; color:#b9a7a9; letter-spacing:.08em; }
+
+/* ============================================================
+   响应式
+   ============================================================ */
+@media(max-width:480px){
+  .days-big{ font-size:5rem; }
+  .entrance-title{ font-size:1.5rem; }
+  .section-title{ font-size:1.4rem; }
+  .typewriter{ font-size:1.02rem; }
+  .btn{ padding:11px 30px; font-size:.95rem; }
+  .btn-no.fleeing{ font-size:.85rem !important; padding:9px 18px !important; }
+  .finale-title{ font-size:1.9rem; }
+}
+</style>
+</head>
+
+<body class="antialiased">
+
+<!-- 滚动进度条 -->
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- 背景装饰 -->
+<div class="film-grain"></div>
+<div class="aurora-blob" style="top:4%;left:-8%;width:320px;height:320px;"></div>
+<div class="aurora-blob" style="bottom:10%;right:-8%;width:260px;height:260px;animation-delay:-4s;"></div>
+<canvas id="particles"></canvas>
+
+<!-- ===================== 入场遮罩 ===================== -->
+<div class="entrance-overlay" id="entranceOverlay">
+  <svg class="entrance-heart" id="entranceHeart" viewBox="0 0 32 29.6" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="心">
+    <defs>
+      <linearGradient id="heartGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#E29AA3"/>
+        <stop offset="55%" stop-color="#C16B75"/>
+        <stop offset="100%" stop-color="#9E4A55"/>
+      </linearGradient>
+    </defs>
+    <path d="M23.6,0c-3.4,0-6.3,2.7-7.6,5.6C14.7,2.7,11.8,0,8.4,0C3.8,0,0,3.8,0,8.4c0,9.4,9.5,11.9,16,21.2c6.1-9.3,16-12.1,16-21.2C32,3.8,28.2,0,23.6,0z" fill="url(#heartGrad)"/>
+  </svg>
+  <p class="entrance-title" id="entranceTitle">三周年快乐</p>
+  <p class="entrance-sub">点一下爱心，查收写给你的话 ❤️</p>
+  <button class="entrance-btn" id="entranceBtn">开启我们的故事</button>
+</div>
+
+<!-- 音乐 -->
+<button class="music-toggle" id="musicToggle" aria-label="播放/暂停背景音乐">🎵</button>
+<div class="music-toast" id="musicToast"><span class="music-toast-dot"></span><span id="musicToastText">正在播放：遇见 (Piano Ver.)</span></div>
+<audio id="bgMusic" loop preload="auto">
+  <source src="assets/meet_piano.mp3" type="audio/mpeg">
+</audio>
+
+<!-- ===================== 首屏 · 天数 ===================== -->
+<section class="hero">
+  <div class="date-stamp"><span class="num-font" id="todayStamp"></span></div>
+  <p class="eyebrow eng-label">Since <span id="sinceDate">2023.07.15</span></p>
+  <div>
+    <div class="days-big num-font" id="daysCounter">0</div>
+    <div class="eng-title days-label">Days · 在一起的第几天</div>
+  </div>
+  <p class="hero-quote">“爱是动词。<br>这是我们第 <b class="text-primary" id="daysInline">0</b> 天，依然选择彼此。”</p>
+
+  <div class="timer-row">
+    <div class="timer-cell"><div class="timer-num num-font" id="t-h">0</div><div class="timer-cap">hours</div></div>
+    <div class="timer-cell"><div class="timer-num num-font" id="t-m">0</div><div class="timer-cap">minutes</div></div>
+    <div class="timer-cell"><div class="timer-num num-font" id="t-s">0</div><div class="timer-cap">seconds</div></div>
+  </div>
+  <p class="heartbeat-line">这段时间里，我的心大约为你跳动了 <b id="heartbeats">0</b> 次。</p>
+
+  <div class="scroll-cue">⌄</div>
+</section>
+
+<!-- ===================== 打字机告白 ===================== -->
+<section class="section-pad">
+  <div class="wrap">
+    <p class="eyebrow eng-label reveal">a few words</p>
+    <h2 class="section-title reveal">想对你说</h2>
+    <div class="section-rule reveal"></div>
+    <div class="glass-card reveal">
+      <p class="typewriter" id="typewriter"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 撕页金句 ===================== -->
+<section class="section-pad" style="padding-top:0;">
+  <div class="wrap">
+    <p class="eyebrow eng-label reveal">today's resonance</p>
+    <h2 class="section-title reveal">遇见 · 今日金句</h2>
+    <div class="section-rule reveal"></div>
+    <p class="zh-deco reveal" style="text-align:center;color:var(--ink-soft);font-size:.92rem;margin-bottom:1.8rem;line-height:2.1;">“每一个撕下日历的日子，都是我们在相爱。”</p>
+
+    <div class="calendar-container reveal" id="calendarContainer">
+      <!-- 日历封面 -->
+      <div class="calendar-cover" id="calendarCover" role="button" tabindex="0" aria-label="撕开今天的金句">
+        <div class="wax-seal"><span class="wax-heart">❤</span></div>
+        <div class="calendar-date" id="calendarDate"></div>
+        <div class="calendar-label-main">遇见·金句</div>
+        <div class="calendar-label-sub">tap to tear</div>
+      </div>
+      <!-- 撕开后的明信片 -->
+      <div class="quote-postcard" id="quotePostcard" style="display:none;">
+        <div class="quote-postcard-border"></div>
+        <div class="quote-name-watermark" id="quoteWatermark">LOVE</div>
+        <div class="quote-postcard-content">
+          <p class="quote-text" id="quoteText"></p>
+          <p class="quote-author" id="quoteAuthor"></p>
+        </div>
+        <div class="quote-footer">
+          <span class="quote-date-watermark" id="quoteDateWatermark"></span>
+          <span class="quote-love">Love You</span>
+        </div>
+      </div>
+    </div>
+    <div class="quote-actions reveal"><button class="quote-refresh" id="quoteRefresh">换一句 ✦</button></div>
+  </div>
+</section>
+
+<!-- ===================== 写给你的情书 ===================== -->
+<section class="section-pad" style="padding-top:0;">
+  <div class="wrap">
+    <p class="eyebrow eng-label reveal">my dearest</p>
+    <h2 class="section-title reveal">写给你的情书</h2>
+    <div class="section-rule reveal"></div>
+
+    <div class="letter-paper reveal">
+      <div class="letter-body">
+        <p>亲爱的梦，见“字”如面呀，不知道忙碌的老大有没有想起今天是什么日子呢，是的！就是我们三周年的纪念日哇！</p>
+        <p>虽然礼物俺之前已经送给宝宝了，但是我后来感觉仪式感是对生活和爱情的尊重，所以这个特别的日子我还是想给你写点东西，今年来点不一样的吧（指网页）嘻嘻，好吧主要是我发现寄信件太太太远啦，我也没带好看的信纸。</p>
+        <p>亲爱的乖宝，我们已经在一起很久很久了，像是我们之前说的，我们两个人除了情侣关系，真的已经是彼此很好很好很好的朋友和不可或缺的依靠了，虽然我还是习惯一个人处理情绪，还是没好好和你报备，还是有时候不关心你，但是我们也确确实实一起走过了很多很多坎坷，一路上，陪我最久，让我最安心，最爱我的人一直都是你，和你在一起我真的很开心。</p>
+        <p>刚在一起的时候，我老是认为恋爱中的距离不是问题，只要我们一直联系，只要我去找你，慢慢都能克服，可是我现在再想这个问题，答案会不一样的，异地恋有很多微妙的情绪，有很多难言的泪水，三年了，我每当想起你，我总是好心疼你，亲爱的乖乖，你一个人也经历了很多委屈，抱抱你，或许有很多夜晚的emo我都缺席，但是请你相信我是爱你的，我也在加油成长，我会成为一个更好更可靠的男朋友嘟！</p>
+        <p>我不知道未来会变成什么样子，或许考研、出国、工作会带给我们更大更难的挑战，但是杞人忧天只会耽误眼前，我想记录好和你在一起的每个瞬间，我想照顾好你在生理期的时候，我也想慢慢和你讲我的人生观世界观，和你聊这个世界，我也想在生活、学习各个方面都有你陪，都能和你学习，我们一起进步，你之前说爱是一种当下的感觉，我不支持也不反对，因为我除了当下，以后依然爱你，除了感觉，我更想承担好一个男朋友的责任。</p>
+        <p>联合国的面试还没有定好时间，我想要是我面试成功了，我们就进入异国恋，那会是什么样子呢，如果没有面试成功，我后半年都将投入考研，考研的时候我们之间会吵架吗，我不知道，但是我不害怕，因为我相信我们能克服的，但是我怎么一直在忙碌呢，乖宝，我好想闲下来，一直陪着你，但是我不能，因为我想在未来给你更好的生活，当然，你也会是一个独立的女孩子，我应该说，我想在未来能陪你一起过着更好的生活，所以我现在加倍在努力。</p>
+        <p>呼~三年的时间发生了很多变化，也有一些事情没有改变，可能此后的人生都是这样，我们朝向前方迷茫，受困或感动于生活的某些琐碎，但是只要我们勇敢和坚定，路再难也可以走下去的。</p>
+        <p>最后我想给乖乖宝宝说，我们的恋爱合同再续一年好吗，嘿嘿，希望亲爱的你天天开心，希望我们早日结束异地，希望余生都是你。</p>
+      </div>
+      <div class="letter-sign">
+        <div class="letter-sign-name">—— 爱你的，周天</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 承诺 · 逃跑按钮 ===================== -->
+<section class="section-pad" style="padding-top:0;">
+  <div class="wrap" style="text-align:center;">
+    <p class="eyebrow eng-label reveal">a little question</p>
+    <div class="section-rule reveal" style="margin-top:1.4rem;"></div>
+    <p class="promise-q reveal">三年了，<br>你还愿意继续和我走下去吗？</p>
+    <div class="btns reveal" id="btns">
+      <button class="btn btn-yes" id="btnYes">当然愿意 💕</button>
+      <button class="btn btn-no" id="btnNo">我再想想…</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 结尾 ===================== -->
+<section class="finale">
+  <div class="wrap">
+    <p class="eyebrow eng-label reveal">happy anniversary</p>
+    <h2 class="finale-title reveal" id="finaleTitle">三周年快乐</h2>
+    <p class="finale-body reveal">
+      三年，一千多个日夜。<br>
+      谢谢你愿意陪我走过这段路，<br>
+      谢谢你的笑、你的暖、你偶尔的小脾气。<br>
+      过去的三周年，是我最珍贵的时光；<br>
+      未来的每一个三周年，我都想和你一起。<br>
+      余生很长，请多指教。
+    </p>
+    <p class="finale-names reveal" id="finaleNames">周天 ❤ 梦梦小姐</p>
+    <p class="finale-sign reveal">Love You</p>
+    <p class="finale-date reveal" id="finaleDate"></p>
+  </div>
+</section>
+
+<div class="footer-mini">用 ❤ 制作 · 三周年纪念</div>
+
+<!-- ===================== 告白成功弹窗 ===================== -->
+<div class="modal" id="modal">
+  <div class="modal-card">
+    <div class="modal-emoji">💕</div>
+    <h3 class="modal-title" id="modalTitle">我就知道 💕</h3>
+    <p class="modal-body">
+      亲爱的，谢谢你又选了我一次。<br>
+      未来的路，我们一起慢慢走。<br>
+      三周年快乐，余生请多指教。
+    </p>
+    <p class="modal-names" id="modalNames">周天 ❤ 梦梦小姐</p>
+    <button class="modal-close" id="modalClose">收下心意 ✕</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   ★★★ 配置区 · 改这里就够了 ★★★
+   ============================================================ */
+const CONFIG = {
+  hisName:        '周天',            // ← 改成你的名字
+  herName:        '梦梦小姐',            // ← 改成她的名字
+  coupleDisplay:  '周天 ❤ 梦梦小姐', // ← 大标题/落款显示
+  callHer:        '乖乖宝宝',              // ← 对她的称呼（打字机/弹窗里用）
+  startDate:      '2023-07-16',          // ★ 在一起的日子（YYYY-MM-DD）★
+  anniversaryLabel:'三周年',             // 周年文案
+  musicName:      '遇见 (Piano Ver.) — 孙燕姿',
+};
+
+/* —— 打字机告白文案（可自由改） —— */
+const TYPE_MESSAGES = [
+  "亲爱的……",
+  "一转眼，三年了。",
+  "一千多个日夜，说长不长，",
+  "却足够让我确信——",
+  "你是我最想一直在一起的人。",
+  "谢谢你的温柔，也谢谢你偶尔的任性；",
+  "谢谢你让我笑，也接住我所有的难过。",
+  "遇见你，是我这三年最大的幸运。",
+  "未来的每一个三年，",
+  "我都想牵着你的手，慢慢走。",
+  "三周年快乐，亲爱的 ❤",
+];
+
+/* —— 金句库 —— */
+const LOVE_QUOTES = [
+  { content:'醒来觉得甚是爱你。', author:'朱生豪' },
+  { content:'我行过许多地方的桥，看过许多次数的云，喝过许多种类的酒，却只爱过一个正当最好年龄的人。', author:'沈从文' },
+  { content:'你是我温暖的手套，冰冷的啤酒，带着阳光味道的衬衫，日复一日的梦想。', author:'廖一梅《恋爱的犀牛》' },
+  { content:'从前的日色变得慢，车，马，邮件都慢，一生只够爱一个人。', author:'木心' },
+  { content:'我爱你，不光因为你的样子，还因为，和你在一起时，我的样子。', author:'罗伊·克罗夫特' },
+  { content:'愿得一心人，白头不相离。', author:'卓文君' },
+  { content:'草在结它的种子，风在摇它的叶子，我们站着，不说话，就十分美好。', author:'顾城' },
+  { content:'余生请多指教。', author:'写给最爱的你' },
+];
+
+/* —— 明信片背景照片（assets/quote1~8.jpg，轮换） —— */
+const POSTCARD_PHOTOS = [
+  'assets/quote1.jpg', 'assets/quote2.jpg', 'assets/quote3.jpg', 'assets/quote4.jpg',
+  'assets/quote5.jpg', 'assets/quote6.jpg', 'assets/quote7.jpg', 'assets/quote8.jpg',
+];
+
+/* ============================================================
+   日期与计数
+   ============================================================ */
+const START = new Date(CONFIG.startDate + 'T00:00:00');
+function daysBetween(){ const t=new Date(); t.setHours(0,0,0,0); return Math.max(0, Math.floor((t-START)/86400000)); }
+function pad(n){ return String(n).padStart(2,'0'); }
+function fmtDate(d){ return d.getFullYear()+'.'+pad(d.getMonth()+1)+'.'+pad(d.getDate()); }
+function fmtDateCN(d){ return d.getFullYear()+'年'+pad(d.getMonth()+1)+'月'+pad(d.getDate())+'日'; }
+function withCommas(n){ return n.toLocaleString('en-US'); }
+
+/* 把名字/日期注入页面 */
+function injectIdentity(){
+  const couple = CONFIG.coupleDisplay || (CONFIG.hisName+' ❤ '+CONFIG.herName);
+  const setText=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  setText('sinceDate', fmtDate(START));
+  setText('todayStamp', fmtDateCN(new Date()));
+  setText('calendarDate', fmtDateCN(new Date()));
+  setText('quoteDateWatermark', fmtDateCN(new Date()));
+  setText('finaleDate', '—— '+fmtDateCN(new Date())+' ——');
+  setText('finaleNames', couple);
+  setText('modalNames', couple);
+  setText('entranceTitle', CONFIG.anniversaryLabel+'快乐');
+  setText('finaleTitle', CONFIG.anniversaryLabel+'快乐');
+  setText('musicToastText', '正在播放：'+CONFIG.musicName);
+  const wm=document.getElementById('quoteWatermark'); if(wm) wm.textContent = (CONFIG.herName||'LOVE');
+  document.title = CONFIG.anniversaryLabel+'快乐 · '+couple;
+  // 把正文里的「亲爱的」替换成自定义称呼（可选）
+  if(CONFIG.callHer && CONFIG.callHer!=='亲爱的'){
+    document.querySelectorAll('.modal-body').forEach(el=>{
+      el.innerHTML = el.innerHTML.replace(/亲爱的/g, CONFIG.callHer);
+    });
+    // 打字机文案从数组读取，需单独替换
+    for(let i=0;i<TYPE_MESSAGES.length;i++){
+      TYPE_MESSAGES[i] = TYPE_MESSAGES[i].replace(/亲爱的/g, CONFIG.callHer);
+    }
+  }
+}
+
+/* ============================================================
+   入场遮罩 → 启动
+   ============================================================ */
+function enterSite(){
+  const ov=document.getElementById('entranceOverlay');
+  if(ov.classList.contains('hidden')) return;
+  ov.classList.add('hidden');
+  startMusic();
+  // 首屏数字 count-up
+  setTimeout(animateDaysCount, 400);
+}
+
+/* ============================================================
+   首屏：天数 count-up + 实时计时 + 心跳数
+   ============================================================ */
+function easeOutCubic(t){ return 1 - Math.pow(1-t, 3); }
+function animateDaysCount(){
+  const el=document.getElementById('daysCounter');
+  const inline=document.getElementById('daysInline');
+  const target=daysBetween(); const dur=1600; const t0=performance.now();
+  function step(now){
+    const p=Math.min((now-t0)/dur,1);
+    const v=Math.floor(easeOutCubic(p)*target);
+    el.textContent=v; inline.textContent=v;
+    if(p<1) requestAnimationFrame(step);
+    else { el.textContent=target; inline.textContent=target; updateHeartbeats(); }
+  }
+  requestAnimationFrame(step);
+}
+function updateTimer(){
+  const now=new Date();
+  let diff=Math.max(0, now-START);
+  const days=Math.floor(diff/86400000); diff-=days*86400000;
+  const h=Math.floor(diff/3600000); diff-=h*3600000;
+  const m=Math.floor(diff/60000); diff-=m*60000;
+  const s=Math.floor(diff/1000);
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('t-h',h); set('t-m',pad(m)); set('t-s',pad(s));
+}
+function updateHeartbeats(){
+  const beats = daysBetween()*100000; // 约 10万次/天
+  const el=document.getElementById('heartbeats');
+  if(el) el.textContent = withCommas(beats);
+}
+
+/* ============================================================
+   粒子：缓慢上浮的爱心
+   ============================================================ */
+(function particles(){
+  const canvas=document.getElementById('particles');
+  const ctx=canvas.getContext('2d');
+  let W,H,hearts=[];
+  function resize(){ W=canvas.width=innerWidth; H=canvas.height=innerHeight; }
+  addEventListener('resize',resize); resize();
+  function make(){ return { x:Math.random()*W, y:H+20, size:8+Math.random()*14, vy:0.4+Math.random()*1, vx:-0.2+Math.random()*0.4, op:0.25+Math.random()*0.4, rot:Math.random()*6.28, vr:(Math.random()-0.5)*0.02 }; }
+  for(let i=0;i<18;i++){ const h=make(); h.y=Math.random()*H; hearts.push(h); }
+  function heart(x,y,s){
+    ctx.save(); ctx.translate(x,y); ctx.scale(s/16,s/16);
+    ctx.beginPath();
+    ctx.moveTo(0,4); ctx.bezierCurveTo(0,0,-6,-2,-6,-6); ctx.bezierCurveTo(-6,-10,0,-10,0,-6);
+    ctx.bezierCurveTo(0,-10,6,-10,6,-6); ctx.bezierCurveTo(6,-2,0,0,0,4); ctx.closePath();
+    ctx.fill(); ctx.restore();
+  }
+  (function loop(){
+    ctx.clearRect(0,0,W,H);
+    hearts.forEach(h=>{
+      h.y-=h.vy; h.x+=h.vx; h.rot+=h.vr;
+      ctx.save(); ctx.globalAlpha=h.op; ctx.fillStyle='#E08A95'; ctx.translate(h.x,h.y); ctx.rotate(h.rot);
+      heart(0,0,h.size); ctx.restore();
+      if(h.y<-30){ Object.assign(h, make()); }
+    });
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* ============================================================
+   打字机
+   ============================================================ */
+let twFinished=false;
+function typeLoop(){
+  const el=document.getElementById('typewriter');
+  const cursor='<span class="cursor"></span>';
+  let mi=0, ci=0, del=false;
+  function tick(){
+    if(twFinished){ el.innerHTML=TYPE_MESSAGES[TYPE_MESSAGES.length-1]+cursor; return; }
+    const full=TYPE_MESSAGES[mi];
+    if(!del){
+      ci++; el.innerHTML=full.substring(0,ci)+cursor;
+      if(ci>=full.length){
+        if(mi===TYPE_MESSAGES.length-1){ twFinished=true; el.innerHTML=full+cursor; return; }
+        del=true; return setTimeout(tick,1500);
+      }
+      setTimeout(tick, 70+Math.random()*40);
+    } else {
+      ci--; el.innerHTML=full.substring(0,ci)+cursor;
+      if(ci<=0){ del=false; mi++; return setTimeout(tick,350); }
+      setTimeout(tick,28);
+    }
+  }
+  tick();
+}
+
+/* ============================================================
+   撕页金句
+   ============================================================ */
+function showQuote(idx){
+  const q=LOVE_QUOTES[idx % LOVE_QUOTES.length];
+  document.getElementById('quoteText').textContent='"'+q.content+'"';
+  document.getElementById('quoteAuthor').textContent='—— '+q.author;
+  const pc=document.getElementById('quotePostcard');
+  pc.style.backgroundImage="url('"+POSTCARD_PHOTOS[idx % POSTCARD_PHOTOS.length]+"')";
+  pc.style.display='block';
+  pc.classList.remove('revealing'); void pc.offsetWidth; pc.classList.add('revealing');
+}
+function tearCalendar(){
+  const cover=document.getElementById('calendarCover');
+  if(!cover || cover.classList.contains('tearing') || cover.style.display==='none') return;
+  cover.style.pointerEvents='none';
+  // 撕纸屑
+  const rect=cover.getBoundingClientRect();
+  const scrap=document.createElement('div');
+  scrap.className='tear-scrap';
+  scrap.style.left=rect.left+'px'; scrap.style.top=(Math.round(rect.top)+6)+'px'; scrap.style.width=rect.width+'px';
+  document.body.appendChild(scrap);
+  scrap.addEventListener('animationend',()=>scrap.remove(),{once:true});
+  cover.classList.add('tearing');
+  setTimeout(()=>{ cover.style.display='none'; showQuote(Math.floor(Math.random()*LOVE_QUOTES.length)); }, 600);
+}
+
+/* ============================================================
+   “我再想想” —— 逐次更换文案，最后一次直接告白
+   点 1 → “这还用想吗？” / 点 2 → “哇～怎么能这样” / 点 3 → “最后一次机会”
+   再点（“最后一次机会”）→ 与“当然愿意”一样弹出告白，但换标题
+   ============================================================ */
+const NO_MESSAGES = ['这还用想吗', '哇怎么能这样', '最后一次机会'];
+let noStep = 0;
+function openConfession(title){
+  const t=document.getElementById('modalTitle'); if(t) t.textContent=title;
+  document.getElementById('modal').classList.add('show');
+  confettiBurst();
+}
+function handleNoClick(){
+  if(noStep < NO_MESSAGES.length){
+    // 还没到最后一句：逐次换文案
+    document.getElementById('btnNo').textContent = NO_MESSAGES[noStep];
+    noStep++;
+  } else {
+    // 已显示“最后一次机会”，再点一次 → 霸道告白
+    openConfession('我不管，我就要你 💕');
+  }
+}
+
+/* ============================================================
+   撒花
+   ============================================================ */
+function confettiBurst(){
+  if(typeof confetti!=='function') return;
+  const colors=['#C16B75','#B08D44','#ffffff','#F4DDE1','#D98A94'];
+  const end=Date.now()+2800;
+  (function frame(){
+    confetti({ particleCount:46, spread:360, startVelocity:28, ticks:60, colors, origin:{ x:Math.random()*0.3+0.05, y:Math.random()-0.2 } });
+    confetti({ particleCount:46, spread:360, startVelocity:28, ticks:60, colors, origin:{ x:Math.random()*0.3+0.65, y:Math.random()-0.2 } });
+    if(Date.now()<end) setTimeout(frame,250);
+  })();
+}
+function confettiTap(x,y){
+  if(typeof confetti!=='function') return;
+  confetti({ particleCount:26, spread:60, origin:{ x:x/innerWidth, y:y/innerHeight }, colors:['#C16B75','#B08D44','#ffffff','#F4DDE1'] });
+}
+
+/* ============================================================
+   音乐
+   ============================================================ */
+const bgMusic=document.getElementById('bgMusic');
+const musicToggle=document.getElementById('musicToggle');
+const musicToast=document.getElementById('musicToast');
+let toastTimer;
+function startMusic(){
+  bgMusic.volume=0.4; bgMusic.play().then(()=>{
+    musicToggle.classList.add('playing'); musicToggle.textContent='🎵';
+    musicToast.classList.add('show');
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>musicToast.classList.remove('show'),4000);
+  }).catch(()=>{ /* 浏览器拦截，等待用户再次点击 */ });
+}
+function toggleMusic(){
+  if(bgMusic.paused) startMusic();
+  else { bgMusic.pause(); musicToggle.classList.remove('playing'); }
+}
+
+/* ============================================================
+   点击冒爱心
+   ============================================================ */
+(function clickHearts(){
+  const emojis=['❤️','💕','💗','💖','💝','💓'];
+  let touchFired=false;
+  function spawn(x,y){
+    const el=document.createElement('span');
+    el.className='click-heart';
+    el.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.left=x+'px'; el.style.top=y+'px';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),1300);
+  }
+  document.addEventListener('touchstart',e=>{ touchFired=true; const t=e.touches[0]; if(t) spawn(t.clientX-12,t.clientY-12); setTimeout(()=>touchFired=false,300); },{passive:true});
+  document.addEventListener('click',e=>{ if(touchFired) return; if(e.target.closest('button,a')) return; spawn(e.clientX-12,e.clientY-12); });
+})();
+
+/* ============================================================
+   滚动：进度条 + 渐入
+   ============================================================ */
+function bindScroll(){
+  const prog=document.getElementById('scrollProgress');
+  const reveals=document.querySelectorAll('.reveal');
+  const io=new IntersectionObserver(entries=>{
+    entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('visible'); io.unobserve(en.target); } });
+  },{ threshold:0.12 });
+  reveals.forEach(el=>io.observe(el));
+
+  addEventListener('scroll',()=>{
+    const h=document.documentElement;
+    const sc=h.scrollTop/(h.scrollHeight-h.clientHeight);
+    prog.style.transform='scaleX('+sc+')';
+  },{passive:true});
+}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+document.addEventListener('DOMContentLoaded',()=>{
+  injectIdentity();
+  bindScroll();
+
+  // 入场
+  document.getElementById('entranceBtn').addEventListener('click', enterSite);
+  document.getElementById('entranceHeart').addEventListener('click', enterSite);
+
+  // 音乐开关
+  musicToggle.addEventListener('click', toggleMusic);
+
+  // 金句
+  document.getElementById('calendarCover').addEventListener('click', tearCalendar);
+  document.getElementById('calendarCover').addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tearCalendar(); } });
+  document.getElementById('quoteRefresh').addEventListener('click',()=>showQuote(Math.floor(Math.random()*LOVE_QUOTES.length)));
+
+  // 打字机：滚到可见时再启动（也可在入场后立即启动）
+  const tw=document.getElementById('typewriter');
+  const ioTw=new IntersectionObserver(en=>{ if(en[0].isIntersecting){ typeLoop(); ioTw.disconnect(); } },{threshold:.3});
+  ioTw.observe(tw);
+
+  // “我再想想”按钮：逐次撒娇，最后一次直接告白
+  document.getElementById('btnNo').addEventListener('click', handleNoClick);
+
+  // 承诺：愿意（标题“我就知道”）
+  document.getElementById('btnYes').addEventListener('click', ()=>openConfession('我就知道 💕'));
+  document.getElementById('modalClose').addEventListener('click',()=>document.getElementById('modal').classList.remove('show'));
+  document.getElementById('modal').addEventListener('click',e=>{ if(e.target.id==='modal') e.currentTarget.classList.remove('show'); });
+
+  // 实时计时
+  updateTimer(); setInterval(updateTimer,1000);
+});
+</script>
+</body>
+</html>
